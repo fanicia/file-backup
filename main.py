@@ -6,6 +6,7 @@ import os
 import shutil
 import datetime
 import time
+import re
 
 # getting the current working directory
 src_dir = os.getcwd()
@@ -19,18 +20,41 @@ class FileHandler(FileSystemEventHandler):
             self.copy_file(event.src_path)
         
     def copy_file(self, src):
-            # split the src into list and get the last element to get the src_file
-            src_file_name = src.split(os.path.sep).pop() 
-            timestamp = datetime.datetime.now().strftime("%d-%m-%y-%H-%M") # not the prettiest datetime-format, but it's filename-friendly
-            target = f"{destination}{os.path.sep}{timestamp}-{src_file_name}"
-            print(os.linesep)
-            print(src)
-            print("       |")
-            print("       |")
-            print("       V")
-            print(target)
-            print(os.linesep)
-            shutil.copy(src, target)
+        # split the src into list and get the last element to get the src_file
+        src_file_name = src.split(os.path.sep).pop()
+        destination_sub_path = self.extract_changed_sub_path(folder_to_track, src)
+        sub_path_list = destination_sub_path.split(os.path.sep)
+        changed_file_name = sub_path_list.pop()
+        path_to_file = os.path.sep.join(sub_path_list)
+        print(f"path_to_file: {path_to_file}")
+
+        print(f"destination_sub_path post-pop: {destination_sub_path}")
+        print(f"changed_file_name: {changed_file_name}")
+        timestamp = datetime.datetime.now().strftime("%d-%m-%y-%H-%M") # not the prettiest datetime-format, but it's filename-friendly
+        target = f"{destination}{path_to_file}{timestamp}-{changed_file_name}"
+        print(os.linesep)
+        print(src)
+        print("       |")
+        print("       |")
+        print("       V")
+        print(target)
+        print(os.linesep)
+        # This works if the directory already exists, which it probably doesn't
+        shutil.copy(src, target)
+
+    def extract_changed_sub_path(self, base_path, changed_path):
+        # This turns the annoying "\" into "/", in case we are on windows
+        base_path = base_path.replace(os.path.sep, "/")
+        changed_path = changed_path.replace(os.path.sep, "/")
+
+        # use positive lookbehind assertion to find the part of the path after the base_path of the source
+        regex = re.compile(f"(?<={base_path})(.*)")
+        match = re.search(regex, changed_path)
+        sub_path = match.group().replace("/", os.path.sep)
+        return sub_path
+
+
+
 
 folder_to_track = f"{os.getcwd()}{os.path.sep}testsubject{os.path.sep}source" 
 destination = f"{os.getcwd()}{os.path.sep}testsubject{os.path.sep}destination"
@@ -38,7 +62,7 @@ print(f"{folder_to_track} --> {destination}")
 
 event_handler = FileHandler()
 observer = Observer()
-observer.schedule(event_handler, folder_to_track, recursive=False)
+observer.schedule(event_handler, folder_to_track, recursive=True)
 observer.start()
 
 try:
