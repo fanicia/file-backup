@@ -2,7 +2,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 # importing the modules
-import os
+import os.path
 import shutil
 import datetime
 import time
@@ -16,7 +16,11 @@ print("########## File-backup started ###########")
 
 class FileHandler(FileSystemEventHandler):
     def on_modified(self, event):
-        if (not event.is_directory):
+        if not event.is_directory:
+            self.copy_file(event.src_path)
+    
+    def on_created(self, event):
+        if not event.is_directory:
             self.copy_file(event.src_path)
         
     def copy_file(self, src):
@@ -25,7 +29,7 @@ class FileHandler(FileSystemEventHandler):
         destination_sub_path = self.extract_changed_sub_path(folder_to_track, src)
         sub_path_list = destination_sub_path.split(os.path.sep)
         changed_file_name = sub_path_list.pop()
-        path_to_file = os.path.sep.join(sub_path_list)
+        path_to_file = f"{os.path.sep.join(sub_path_list)}{os.path.sep}"
         print(f"path_to_file: {path_to_file}")
 
         print(f"destination_sub_path post-pop: {destination_sub_path}")
@@ -39,8 +43,11 @@ class FileHandler(FileSystemEventHandler):
         print("       V")
         print(target)
         print(os.linesep)
-        # This works if the directory already exists, which it probably doesn't
+        
+        os.makedirs(f"{destination}{path_to_file}", exist_ok = True)    
         shutil.copy(src, target)
+
+        
 
     def extract_changed_sub_path(self, base_path, changed_path):
         # This turns the annoying "\" into "/", in case we are on windows
@@ -71,3 +78,6 @@ try:
 except KeyboardInterrupt:
     observer.stop()
 observer.join()
+
+
+print("########## File-backup ended ###########")
