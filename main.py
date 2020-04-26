@@ -24,16 +24,12 @@ class FileHandler(FileSystemEventHandler):
             self.copy_file(event.src_path)
         
     def copy_file(self, src):
-        # split the src into list and get the last element to get the src_file
         src_file_name = src.split(os.path.sep).pop()
         destination_sub_path = self.extract_changed_sub_path(folder_to_track, src)
         sub_path_list = destination_sub_path.split(os.path.sep)
         changed_file_name = sub_path_list.pop()
         path_to_file = f"{os.path.sep.join(sub_path_list)}{os.path.sep}"
-        print(f"path_to_file: {path_to_file}")
 
-        print(f"destination_sub_path post-pop: {destination_sub_path}")
-        print(f"changed_file_name: {changed_file_name}")
         timestamp = datetime.datetime.now().strftime("%d-%m-%y-%H-%M") # not the prettiest datetime-format, but it's filename-friendly
         target = f"{destination}{path_to_file}{timestamp}-{changed_file_name}"
         print(os.linesep)
@@ -43,6 +39,8 @@ class FileHandler(FileSystemEventHandler):
         print("       V")
         print(target)
         print(os.linesep)
+        print("----------------------------------------")
+
         
         os.makedirs(f"{destination}{path_to_file}", exist_ok = True)    
         shutil.copy(src, target)
@@ -78,6 +76,5 @@ try:
 except KeyboardInterrupt:
     observer.stop()
 observer.join()
-
 
 print("########## File-backup ended ###########")
